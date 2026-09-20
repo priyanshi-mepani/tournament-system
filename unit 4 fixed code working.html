@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tournament System</title>
+  <style>
+    :root {
+      --primary: #4CAF50;
+      --sec: #fff;
+      --bg: #f9f9f9;
+      --inp: #f2f2f2;
+      --radius: px;
+      --shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body, input, select, button {
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg,#d3ffe8,#e3eeff);
+      height: 100vh;
+      margin:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+    .container {
+      background: var(--sec);
+      width: 420px;
+      padding: 30px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display:none;
+      animation: fade 0.4s ease;
+    }
+    .active { display:block; }
+    @keyframes fade {
+      from { opacity:0; transform:translateY(20px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    h2, h3 { text-align:center; color:var(--primary); margin-bottom:20px; }
+    input, select {
+      width:100%; padding:12px; margin:8px 0;
+      background:var(--inp); border:1px solid #ccc;
+      border-radius:var(--radius);
+    }
+    input:focus, select:focus {
+      outline:none; border-color:var(--primary); background:#fff;
+    }
+    button {
+      width:100%; padding:12px; margin-top:15px;
+      background:var(--primary); border:none;
+      color:#fff; font-size:16px;
+      border-radius:var(--radius); cursor:pointer;
+      transition:background 0.3s;
+    }
+    button:hover { background:#3d9f45; }
+    .link { text-align:center; margin-top:12px; }
+    .link a { color:#007BFF; text-decoration:none; font-weight:bold; }
+    .link a:hover { text-decoration:underline; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+    th { background:#f0f0f0; }
+    .score-input { width:60px; }
+    .inline-buttons { display:flex; gap:10px; margin-bottom:15px; }
+    .inline-buttons button { flex:1; margin-top:0; }
+    .action-btns { display:flex; gap:5px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="container active" id="login">
+  <h2>Login</h2>
+  <input id="login-user" placeholder="Username">
+  <input id="login-pass" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <div class="link">Don't have an account? <a onclick="show('signup')">Sign Up</a></div>
+</div>
+
+<!-- SIGNUP -->
+<div class="container" id="signup">
+  <h2>Sign Up</h2>
+  <input id="signup-user" placeholder="Create Username">
+  <input id="signup-pass" type="password" placeholder="Create Password">
+  <button onclick="signUp()">Sign Up</button>
+  <div class="link">Have an account? <a onclick="show('login')">Login</a></div>
+</div>
+
+<!-- MENU -->
+<div class="container" id="menu">
+  <h2>Main Menu</h2>
+  <div class="inline-buttons">
+    <button onclick="show('reg')">Register Participant</button>
+    <button onclick="show('event')">Create Event</button>
+  </div>
+  <div class="inline-buttons">
+    <button onclick="show('score')">Submit Scores</button>
+    <button onclick="show('leader')">Leaderboard</button>
+  </div>
+  <div class="inline-buttons">
+    <button onclick="show('manageParticipants')">Participants</button>
+    <button onclick="show('manageEvents')">Events</button>
+  </div>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- REGISTER PARTICIPANT -->
+<div class="container" id="reg">
+  <h2>Register Participant</h2>
+  <select id="entry-type" onchange="toggReg()">
+    <option value="">Select Type...</option>
+    <option value="individual">Individual</option>
+    <option value="team">Team</option>
+  </select>
+  <div id="indiv" style="display:none">
+    <input id="ind-name" placeholder="Name">
+    <input id="ind-age" type="number" placeholder="Age">
+  </div>
+  <div id="teem" style="display:none">
+    <input id="team-name" placeholder="Team Name">
+    <input class="team-mem" placeholder="Member 1">
+    <input class="team-mem" placeholder="Member 2">
+    <input class="team-mem" placeholder="Member 3">
+    <input class="team-mem" placeholder="Member 4">
+    <input class="team-mem" placeholder="Member 5">
+  </div>
+  <button onclick="submitReg()">Submit</button>
+  <button onclick="show('menu')">Back</button>
+</div>
+
+<!-- CREATE EVENT -->
+<div class="container" id="event">
+  <h2>Create Event</h2>
+  <input id="evt-name" placeholder="Event Name">
+  <select id="evt-type">
+    <option value="">Type...</option>
+    <option value="individual">Individual</option>
+    <option value="team">Team</option>
+  </select>
+  <input id="evt-max" type="number" placeholder="Max Points">
+  <button onclick="createEvt()">Create</button>
+  <button onclick="show('menu')">Back</button>
+</div>
+
+<!-- SUBMIT SCORES -->
+<div class="container" id="score">
+  <h2>Submit Scores</h2>
+  <select id="score-event" onchange="loadParticipants()">
+    <option value="">Select Event...</option>
+  </select>
+  <table><thead><tr><th>Name</th><th>Score</th><th>Attended</th></tr></thead><tbody></tbody></table>
+  <button onclick="saveScore()">Save Scores</button>
+  <button onclick="show('menu')">Back</button>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="container" id="leader">
+  <h2>Leaderboard</h2>
+  <button onclick="exportCSV()">Download CSV</button>
+  <h3>Individuals</h3>
+  <table id="tbl-ind"><thead><tr><th>Name</th><th>Total</th><th>Events</th></tr></thead><tbody></tbody></table>
+  <h3>Teams</h3>
+  <table id="tbl-team"><thead><tr><th>Team</th><th>Total</th><th>Events</th></tr></thead><tbody></tbody></table>
+  <button onclick="show('menu')">Back</button>
+</div>
+
+<!-- MANAGE PARTICIPANTS -->
+<div class="container" id="manageParticipants">
+  <h2>Participants</h2>
+  <table id="participantTable"><thead><tr><th>Name/Team</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  <button onclick="show('menu')">Back</button>
+</div>
+
+<!-- MANAGE EVENTS -->
+<div class="container" id="manageEvents">
+  <h2>Events</h2>
+  <table id="eventTable"><thead><tr><th>Event</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  <button onclick="show('menu')">Back</button>
+</div>
+
+<script>
+let users={}, regs=[], evts=[], scores={};
+function updStore(){
+  localStorage.setItem('users', JSON.stringify(users));
+  localStorage.setItem('regs', JSON.stringify(regs));
+  localStorage.setItem('evts', JSON.stringify(evts));
+  localStorage.setItem('scores', JSON.stringify(scores));
+}
+function loadStore(){
+  users = JSON.parse(localStorage.getItem('users'))||{};
+  regs = JSON.parse(localStorage.getItem('regs'))||[];
+  evts = JSON.parse(localStorage.getItem('evts'))||[];
+  scores= JSON.parse(localStorage.getItem('scores'))||{};
+}
+loadStore();
+
+function show(id){
+  document.querySelectorAll('.container').forEach(c=>c.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='score') populateEvents();
+  if(id==='leader') refreshLeader();
+  if(id==='manageParticipants') refreshParticipants();
+  if(id==='manageEvents') refreshEvents();
+}
+
+function login(){
+  const u=document.getElementById('login-user').value.trim().toLowerCase();
+  const p=document.getElementById('login-pass').value;
+  if(!u || !p) return alert('Please enter username and password');
+  if((u==='admin'&&p==='password')||(users[u]===p)){
+    alert("Login successful");
+    show('menu');
+  }
+  else alert('Invalid credentials');
+}
+
+function signUp(){
+  const u=document.getElementById('signup-user').value.trim().toLowerCase();
+  const p=document.getElementById('signup-pass').value;
+  if(!u||!p) return alert('Fill all fields');
+  if(users[u]) return alert('Username taken');
+  users[u]=p; updStore(); alert('Registered!'); show('login');
+}
+
+function logout(){
+  loadStore(); show('login'); alert('Logged out successfully');
+}
+
+function toggReg(){
+  const t=document.getElementById('entry-type').value;
+  document.getElementById('indiv').style.display = t==='individual'?'block':'none';
+  document.getElementById('teem').style.display = t==='team'?'block':'none';
+}
+
+function submitReg(){
+  const t=document.getElementById('entry-type').value;
+  if(t==='individual'){
+    if(regs.filter(r=>r.type==='individual').length>=20) return alert('Max 20 individuals reached');
+    const n=document.getElementById('ind-name').value.trim();
+    const a=document.getElementById('ind-age').value;
+    if(!n||!a) return alert('Fill all');
+    const id='P'+String(regs.filter(r=>r.type==='individual').length+1).padStart(3,'0');
+    regs.push({type:'individual',name:n,age:a,id});
+  } else if(t==='team'){
+    if(regs.filter(r=>r.type==='team').length>=4) return alert('Max 4 teams reached');
+    const tn=document.getElementById('team-name').value.trim();
+    const mem=Array.from(document.getElementsByClassName('team-mem')).map(i=>i.value.trim());
+    if(!tn||mem.some(m=>!m)) return alert('Fill all');
+    const id='T'+String(regs.filter(r=>r.type==='team').length+1).padStart(3,'0');
+    regs.push({type:'team',team:tn,members:mem,id});
+  } else return alert('Select type');
+  updStore(); alert('Registered'); show('menu');
+}
+
+function createEvt(){
+  const n=document.getElementById('evt-name').value.trim();
+  const t=document.getElementById('evt-type').value;
+  const m=document.getElementById('evt-max').value;
+  if(!n||!t||!m) return alert('Fill all');
+  const id='E'+String(evts.length+1).padStart(3,'0');
+  evts.push({id,name:n,type:t,max:parseInt(m)});
+  updStore(); alert('Created'); document.getElementById('evt-name').value='';
+}
+
+function populateEvents(){
+  const sel=document.getElementById('score-event');
+  sel.innerHTML='<option value="">Select Event...</option>';
+  evts.forEach(e=> sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`);
+}
+
+function loadParticipants(){
+  const sel=document.querySelector('#score table tbody');
+  sel.innerHTML='';
+  const id=document.getElementById('score-event').value;
+  const e=evts.find(ev=>ev.id===id); if(!e) return;
+  regs.filter(r=>r.type===e.type).forEach(r=>{
+    let name=r.type==='individual'?r.name:r.team;
+    sel.innerHTML+=`<tr><td>${name}</td>
+      <td><input class="score-input" id="sc_${r.id}" type="number" max="${e.max}"></td>
+      <td><input type="checkbox" id="att_${r.id}"></td></tr>`;
+  });
+}
+
+function saveScore(){
+  const id=document.getElementById('score-event').value;
+  if(!id) return alert('Select event');
+  scores[id] = scores[id]||{};
+  document.querySelectorAll('.score-input').forEach(i=>{
+    const pid=i.id.split('_')[1];
+    const sc=parseInt(i.value)||0;
+    const attended=document.getElementById('att_'+pid).checked;
+    scores[id][pid]={score: sc, attended};
+  });
+  updStore(); alert('Saved!');
+}
+
+function refreshLeader(){
+  const ti=document.querySelector('#tbl-ind tbody');
+  const tt=document.querySelector('#tbl-team tbody');
+  ti.innerHTML=''; tt.innerHTML='';
+  const totals={}, eventsCount={};
+  evts.forEach(e=>{
+    const scs=scores[e.id]||{};
+    Object.entries(scs).forEach(([pid,data])=>{
+      const r=regs.find(rr=>rr.id===pid);
+      if (!r || !data.attended) return;
+      const key=r.type==='individual'?r.name:r.team;
+      totals[key]=(totals[key]||0)+data.score;
+      eventsCount[key]=(eventsCount[key]||0)+1;
+    });
+  });
+  Object.entries(totals)
+    .sort((a,b)=>b[1]-a[1])
+    .forEach(([k,v])=>{
+      const rows = regs.some(r=>r.type==='individual'&&r.name===k)? ti : tt;
+      rows.innerHTML+=`<tr><td>${k}</td><td>${v}</td><td>${eventsCount[k]||0}</td></tr>`;
+    });
+}
+
+function exportCSV(){
+  let rows=[["Name/Team","Total Score","Events Attended"]];
+  ['tbl-ind','tbl-team'].forEach(id=>{
+    document.querySelectorAll(`#${id} tbody tr`).forEach(r=>{
+      const t=[...r.querySelectorAll('td')].map(td=>td.innerText);
+      rows.push(t);
+    });
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download="leaderboard.csv";
+  a.click();
+}
+
+function refreshParticipants(){
+  const tb=document.querySelector('#participantTable tbody');
+  tb.innerHTML='';
+  regs.forEach((r,i)=>{
+    const nm=r.type==='individual'?r.name:r.team;
+    tb.innerHTML+=`<tr><td>${nm}</td>
+      <td class="action-btns">
+        <button onclick="editParticipant(${i})">Edit</button>
+        <button onclick="deleteParticipant(${i})">Delete</button>
+      </td></tr>`;
+  });
+}
+
+function deleteParticipant(i){
+  if(confirm('Delete?')){
+    regs.splice(i,1); updStore(); refreshParticipants();
+  }
+}
+
+function refreshEvents(){
+  const tb=document.querySelector('#eventTable tbody');
+  tb.innerHTML='';
+  evts.forEach((e,i)=>{
+    tb.innerHTML+=`<tr><td>${e.name}</td>
+      <td class="action-btns">
+        <button onclick="editEvent(${i})">Edit</button>
+        <button onclick="deleteEvent(${i})">Delete</button>
+      </td></tr>`;
+  });
+}
+
+function deleteEvent(i){
+  if(confirm('Delete?')){
+    evts.splice(i,1); updStore(); refreshEvents();
+  }
+}
+
+function editParticipant(i){
+  const p=regs[i];
+  if(p.type==='individual'){
+    const name=prompt("Edit name:", p.name);
+    const age=prompt("Edit age:", p.age);
+    if(name&&age){ p.name=name; p.age=age; }
+  } else {
+    const team=prompt("Edit team name:", p.team);
+    if(team) p.team=team;
+    for(let j=0;j<p.members.length;j++){
+      const mem=prompt(`Edit Member ${j+1}:`,p.members[j]);
+      if(mem) p.members[j]=mem;
+    }
+  }
+  updStore(); refreshParticipants();
+}
+
+function editEvent(i){
+  const e=evts[i];
+  const name=prompt("Edit event name:",e.name);
+  const type=prompt("Edit type (individual/team):", e.type);
+  const max=prompt("Edit max points:", e.max);
+  if(name&&(type==='individual'||type==='team')&&max){
+    e.name=name; e.type=type; e.max=parseInt(max);
+    updStore(); refreshEvents();
+  } else alert("Invalid input");
+}
+</script>
+</body>
+</html>
